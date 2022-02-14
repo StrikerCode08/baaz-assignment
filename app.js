@@ -23,28 +23,23 @@ app.post("/register", async (req, res) => {
     if (existingUser) {
       res.status(401).send("User already exists");
     }
-    const logo = req.files.logo;
-    let path = __dirname + "/images" + Date.now() + ".jpg";
-    logo.mv(path, (err) => {
-      res.send(true);
-    });
+    // const logo = req.files.logo;
+    // let path = __dirname + "/images" + Date.now() + ".jpg";
+    // logo.mv(path, (err) => {
+    //   res.send(true);
+    // });
     const myEncPassword = await bcrypt.hash(password, 12);
 
     const user = await User.create({
       username,
       name,
       password: myEncPassword,
-      logo: path,
     });
 
     //token
-    const token = jwt.sign(
-      { user_id: user._id, username },
-      process.env.SECRECT_KEY,
-      {
-        expiresIn: "1h",
-      }
-    );
+    const token = jwt.sign({ user_id: user._id }, process.env.SECRECT_KEY, {
+      expiresIn: "1h",
+    });
     user.token = token;
     //update or not in DB
 
@@ -107,8 +102,17 @@ app.post("/resetpassword", auth, async (req, res) => {
   await user.findOneAndUpdate({ username }, { password: myEncPassword });
 });
 
-app.get("/getinfo", auth, (req, res) => {
-  // find user sing token or session id couldn't make logic for it.
+app.get("/getinfo", auth, async (req, res) => {
+  try {
+    const users = await User.find();
+
+    res.status(200).json({
+      success: true,
+      users,
+    });
+  } catch (error) {
+    console.log(error);
+  }
 });
 
 module.exports = app;
